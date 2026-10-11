@@ -81,6 +81,14 @@ public class VehicleLead {
         return View.enabled && p != null ? p.getVehicle() : null;
     }
 
+    static int link(BaseVehicle vehicle) {
+        BaseVehicle v = seated();
+        for (int i = 0; v != null && i < CHAIN; i++, v = v.getVehicleTowing()) {
+            if (v == vehicle) return i;
+        }
+        return -1;
+    }
+
     public static void pivot(Object character, Object pivot) {
         BaseVehicle vehicle = seated();
         if (vehicle == null || character != IsoPlayer.players[0]) return;
