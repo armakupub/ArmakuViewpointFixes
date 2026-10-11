@@ -1,6 +1,6 @@
 # Armaku's Fixes for Project Viewpoint
 
-My personal fixes for [Project Viewpoint](https://steamcommunity.com/sharedfiles/filedetails/?id=3809306528) in Project Zomboid B42, kept until they are fixed in Viewpoint itself.
+My personal fixes and tweaks for [Project Viewpoint](https://steamcommunity.com/sharedfiles/filedetails/?id=3809306528) in Project Zomboid B42.
 
 - **Smooth driving**: your vehicle, what it tows and everyone in it move smoothly at any frame rate, so the view no longer judders while driving.
 - **Steady camera on foot**: the third-person camera no longer shakes while walking at uneven frame rates.

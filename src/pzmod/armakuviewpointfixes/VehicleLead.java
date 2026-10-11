@@ -3,6 +3,7 @@ package pzmod.armakuviewpointfixes;
 import java.lang.reflect.Field;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import viewpoint.core.Frame;
 import viewpoint.core.View;
 import zombie.characters.IsoPlayer;
 import zombie.core.physics.WorldSimulation;
@@ -94,6 +95,28 @@ public class VehicleLead {
         if (vehicle == null || Float.isNaN(yaw)) return yaw;
         lead(vehicle, 0);
         return yaw - turn;
+    }
+
+    // Viewpoint eases the eye, the lead must skip that.
+    public static boolean eyeLead(Object character) {
+        BaseVehicle vehicle = seated();
+        if (vehicle == null || View.thirdPerson || character != IsoPlayer.players[0]) return false;
+        lead(vehicle, 0);
+        return true;
+    }
+
+    public static float leadX() {
+        return x;
+    }
+
+    public static float leadY() {
+        return y;
+    }
+
+    public static void eye(Object character, Frame frame) {
+        if (!eyeLead(character)) return;
+        frame.eyeX -= x;
+        frame.eyeZ -= y;
     }
 
     public static void shift(ModelSlotRenderData data) {

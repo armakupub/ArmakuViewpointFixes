@@ -1,5 +1,5 @@
 name=Viewpoint - Armaku's Fixes
 id=ArmakuViewpointFixes
-description=Personal fixes for Project Viewpoint, kept until they are fixed upstream: smooth vehicle motion between physics steps, steady third-person camera on foot.
+description=Personal fixes and tweaks for Project Viewpoint: smooth vehicle motion between physics steps, steady third-person camera on foot.
 require=ZombieBuddy,Viewpoint
-modversion=0.1.0
+modversion=0.1.1

@@ -14,6 +14,8 @@ if tasklist //FI "IMAGENAME eq ProjectZomboid64.exe" //FO CSV //NH 2>/dev/null |
     exit 1
 fi
 
+"$JDK_DIR/bin/java.exe" "$ROOT/tools/AdviceAccessCheck.java" "$ROOT/src"
+
 rm -rf "$BUILD"
 mkdir -p "$BUILD/classes"
 mapfile -t SOURCES < <(find "$ROOT/src" -name '*.java')
