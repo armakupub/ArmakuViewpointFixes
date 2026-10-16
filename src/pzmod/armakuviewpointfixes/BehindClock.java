@@ -17,7 +17,7 @@ public class BehindClock {
     static long drawnNumber = Long.MIN_VALUE;
 
     public static void captured(boolean chasing) {
-        active = chasing;
+        active = chasing && Settings.STEADY_CURVES.get();
         if (capturing != null) steps.put(capturing, chasing ? Math.min(MOST, GameTime.getInstance().getPhysicsSecondsSinceLastUpdate()) : 0.0f);
     }
 
@@ -26,7 +26,7 @@ public class BehindClock {
         steps.put(frame, 0.0f);
     }
 
-    // Render thread: the swing moves on by the drawn frame's own step, once.
+    // Render thread; a frame drawn twice adds its step once.
     static void drawing(Frame frame) {
         if (frame.number == drawnNumber) {
             pending = 0.0f;
@@ -57,7 +57,6 @@ public class BehindClock {
         else if (step > 0.0f) rate = Look.wrap(Look.yaw - before) / step;
     }
 
-    // The drawn vehicle is moved on by DrawTime, the swing turns on with it.
     public static void lead() {
         if (!active || DrawTime.ahead == 0.0f || rate == 0.0f) return;
         leadYaw = rate * DrawTime.ahead;

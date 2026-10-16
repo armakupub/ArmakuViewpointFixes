@@ -18,9 +18,8 @@ public class Patch_DrawTime {
     @Patch(className = "viewpoint.models.VehicleCapture", methodName = "capture")
     public static class Patch_VehicleCapture {
         @Patch.OnEnter
-        public static void enter(@Patch.Argument(0) Frame frame, @Patch.Argument(1) ModelSlotRenderData data,
-                                 @Patch.Argument(2) BaseVehicle vehicle) {
-            DrawTime.beforeVehicle(frame, data, vehicle);
+        public static void enter(@Patch.Argument(0) Frame frame, @Patch.Argument(2) BaseVehicle vehicle) {
+            DrawTime.beforeVehicle(frame, vehicle);
         }
 
         @Patch.OnExit

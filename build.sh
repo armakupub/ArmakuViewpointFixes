@@ -29,6 +29,7 @@ mkdir -p "$STAGE/$VERSION_DIR/media/java/client"
 cp "$ROOT/mod_files/mod.info" "$STAGE/mod.info"
 cp "$ROOT/mod_files/$VERSION_DIR/mod.info" "$STAGE/$VERSION_DIR/mod.info"
 cp "$BUILD/armakuviewpointfixes.jar" "$STAGE/$VERSION_DIR/media/java/client/armakuviewpointfixes.jar"
+cp -r "$ROOT/mod_files/$VERSION_DIR/media/lua" "$STAGE/$VERSION_DIR/media/lua"
 
 rm -rf "$INSTALL"
 cp -r "$STAGE" "$INSTALL"

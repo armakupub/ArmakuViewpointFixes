@@ -1,7 +1,7 @@
 name=Viewpoint - Armaku's Fixes
 id=ArmakuViewpointFixes
-description=Personal fixes and tweaks for Project Viewpoint: smooth vehicle motion between physics steps, steady third-person camera on foot.
+description=Personal fixes and tweaks for Project Viewpoint.
 require=\ZombieBuddy,\Viewpoint
-modversion=0.1.2
+modversion=0.2.0
 javaJarFile=media/java/client/armakuviewpointfixes.jar
 javaPkgName=pzmod.armakuviewpointfixes

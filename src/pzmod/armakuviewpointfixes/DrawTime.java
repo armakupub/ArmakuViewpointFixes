@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.joml.Vector3f;
 import viewpoint.core.Frame;
 import viewpoint.render.ModelDraws;
+import viewpoint.render.SpotDraws;
 import zombie.characters.IsoGameCharacter;
 import zombie.core.skinnedmodel.model.ModelSlotRenderData;
 import zombie.vehicles.BaseVehicle;
@@ -21,13 +22,14 @@ public class DrawTime {
     static final int PREVIOUS = 36;
     static final int MOTION = 8;
     static final int ITEMS = 32;
-    // Matrix and bounds' centre kept per record, so a frame drawn twice is moved from the original.
+    static final int LAMP_ITEMS = 8;
+    // Kept per record, so a frame drawn twice is moved from the original.
     static final int KEPT = 19;
     static final Field RECORDS, KEYS, FLAGS, DRAWER_FRAME;
     static volatile boolean broken;
 
     static final class Item {
-        int from, to;
+        int from, to, slot;
         float vx, vy, rate, cx, cz;
     }
 
@@ -39,6 +41,11 @@ public class DrawTime {
         final Item[] items = new Item[ITEMS];
         boolean saved;
         float[] kept = new float[64 * KEPT];
+        int lampItems;
+        final Item[] lamps = new Item[LAMP_ITEMS];
+        boolean lampsSaved;
+        final float[] keptLamps = new float[768];
+        final float[] keptMaps = new float[55];
     }
 
     static final Map<Frame, Shot> shots = new ConcurrentHashMap<>();
@@ -72,8 +79,8 @@ public class DrawTime {
         frameStart = System.nanoTime();
     }
 
-    static Item start(Frame frame) {
-        if (broken || frame.onCamera) return null;
+    static Shot shot(Frame frame) {
+        if (broken || frame.onCamera || !Settings.STEADY_CURVES.get()) return null;
         Shot s = shots.computeIfAbsent(frame, k -> new Shot());
         if (s.number != frame.number) {
             s.number = frame.number;
@@ -82,8 +89,15 @@ public class DrawTime {
             s.camVY = 0.0f;
             s.count = 0;
             s.saved = false;
+            s.lampItems = 0;
+            s.lampsSaved = false;
         }
-        if (s.count == ITEMS) return null;
+        return s;
+    }
+
+    static Item start(Frame frame) {
+        Shot s = shot(frame);
+        if (s == null || s.count == ITEMS) return null;
         Item it = s.items[s.count];
         if (it == null) it = s.items[s.count] = new Item();
         s.count++;
@@ -94,11 +108,11 @@ public class DrawTime {
     }
 
     static void moving(Frame frame, Item it, BaseVehicle vehicle, int link) {
-        VehicleLead.lead(vehicle, link);
+        VehicleTurn.track(vehicle, link);
         vehicle.getLinearVelocity(velocity);
         it.vx = velocity.x;
         it.vy = velocity.z;
-        it.rate = VehicleLead.rates[link].rate;
+        it.rate = VehicleTurn.rates[link].rate;
         if (link == 0) {
             Shot s = shots.get(frame);
             s.camVX = it.vx;
@@ -106,27 +120,45 @@ public class DrawTime {
         }
     }
 
-    public static void beforeVehicle(Frame frame, ModelSlotRenderData data, BaseVehicle vehicle) {
+    public static void beforeVehicle(Frame frame, BaseVehicle vehicle) {
         open = null;
-        int link = VehicleLead.link(vehicle);
+        int link = VehicleTurn.link(vehicle);
         if (link < 0) return;
         Item it = start(frame);
         if (it == null) return;
         moving(frame, it, vehicle, link);
-        it.cx = frame.camX - data.x;
-        it.cz = frame.camY - data.y;
+        it.cx = frame.camX - (float) VehicleTurn.centre[0];
+        it.cz = frame.camY - (float) VehicleTurn.centre[1];
     }
 
     public static void beforeCharacter(Frame frame, ModelSlotRenderData data, IsoGameCharacter chr) {
         open = null;
         BaseVehicle vehicle = data.inVehicle ? chr.getVehicle() : null;
-        int link = vehicle == null ? -1 : VehicleLead.link(vehicle);
+        int link = vehicle == null ? -1 : VehicleTurn.link(vehicle);
         if (link < 0) return;
         Item it = start(frame);
         if (it == null) return;
         moving(frame, it, vehicle, link);
-        it.cx = frame.camX - (vehicle.getX() + VehicleLead.x);
-        it.cz = frame.camY - (vehicle.getY() + VehicleLead.y);
+        it.cx = frame.camX - (float) VehicleTurn.centre[0];
+        it.cz = frame.camY - (float) VehicleTurn.centre[1];
+    }
+
+    static void lamps(Frame frame, BaseVehicle vehicle, int link, int from, int to, int slot, float cx, float cz) {
+        if (to <= from && slot < 0) return;
+        Shot s = shot(frame);
+        if (s == null || s.lampItems == LAMP_ITEMS) return;
+        Item it = s.lamps[s.lampItems];
+        if (it == null) it = s.lamps[s.lampItems] = new Item();
+        s.lampItems++;
+        it.from = from;
+        it.to = to;
+        it.slot = slot;
+        vehicle.getLinearVelocity(velocity);
+        it.vx = velocity.x;
+        it.vy = velocity.z;
+        it.rate = VehicleTurn.rates[link].rate;
+        it.cx = cx;
+        it.cz = cz;
     }
 
     public static void after(Frame frame) {
@@ -161,7 +193,7 @@ public class DrawTime {
             drawing = frame;
             BehindClock.drawing(frame);
             Shot s = shots.get(frame);
-            if (s == null || s.number != frame.number || s.count == 0 || s.started == 0L) {
+            if (s == null || s.number != frame.number || s.count + s.lampItems == 0 || s.started == 0L) {
                 latency = Float.NaN;
                 drawnAt = 0L;
                 return;
@@ -174,6 +206,7 @@ public class DrawTime {
             camDX = s.camVX * ahead;
             camDY = s.camVY * ahead;
             move(frame, s);
+            moveLamps(frame, s);
         } catch (ReflectiveOperationException | RuntimeException e) {
             broken = true;
             ahead = 0.0f;
@@ -193,6 +226,24 @@ public class DrawTime {
         float[] e = (float[]) eye;
         e[0] -= camDX;
         e[2] -= camDY;
+    }
+
+    static void moveLamps(Frame frame, Shot s) {
+        if (s.lampItems == 0) return;
+        SpotDraws spots = frame.scene.spots;
+        int floats = Math.min(spots.lampCount * HeadlightLead.RECORD, spots.lamps.length);
+        if (!s.lampsSaved) {
+            System.arraycopy(spots.lamps, 0, s.keptLamps, 0, floats);
+            System.arraycopy(spots.carMaps, 0, s.keptMaps, 0, s.keptMaps.length);
+            s.lampsSaved = true;
+        }
+        System.arraycopy(s.keptLamps, 0, spots.lamps, 0, floats);
+        System.arraycopy(s.keptMaps, 0, spots.carMaps, 0, s.keptMaps.length);
+        for (int i = 0; i < s.lampItems; i++) {
+            Item it = s.lamps[i];
+            HeadlightLead.move(spots.lamps, spots.carMaps, it.from, it.to, it.slot, it.rate * ahead, it.cx, it.cz,
+                    -it.vx * ahead, -it.vy * ahead);
+        }
     }
 
     static void move(Frame frame, Shot s) throws ReflectiveOperationException {

@@ -3,21 +3,12 @@ package pzmod.armakuviewpointfixes;
 import me.zed_0xff.zombie_buddy.Patch;
 import viewpoint.core.Frame;
 
-public class Patch_Look {
+public class Patch_BehindClock {
     @Patch(className = "viewpoint.camera.ThirdPerson", methodName = "capture")
     public static class Patch_capture {
         @Patch.OnEnter
         public static void enter(@Patch.Argument(0) Frame frame) {
             BehindClock.capturing(frame);
-        }
-    }
-
-    @Patch(className = "viewpoint.input.Look", methodName = "behind")
-    public static class Patch_behind {
-        @Patch.OnEnter
-        public static void enter(@Patch.Argument(value = 0, readOnly = false) float yaw) {
-            yaw = VehicleLead.heading(yaw);
-            BehindClock.captured(!Float.isNaN(yaw));
         }
     }
 
